@@ -11,6 +11,8 @@ import com.dpnevsky.finance.model.Wallet;
 import com.dpnevsky.finance.service.AuthService;
 import com.dpnevsky.finance.service.BudgetService;
 import com.dpnevsky.finance.service.FinanceService;
+import com.dpnevsky.finance.model.TransferResult;
+import com.dpnevsky.finance.service.TransferService;
 
 import java.io.PrintStream;
 import java.math.BigDecimal;
@@ -28,6 +30,7 @@ public class ConsoleApplication {
     private final AuthService authService;
     private final FinanceService financeService;
     private final BudgetService budgetService;
+    private final TransferService transferService;
 
     private User currentUser;
 
@@ -35,12 +38,14 @@ public class ConsoleApplication {
                               PrintStream output,
                               AuthService authService,
                               FinanceService financeService,
-                              BudgetService budgetService) {
+                              BudgetService budgetService,
+                              TransferService transferService) {
         this.scanner = Objects.requireNonNull(scanner);
         this.output = Objects.requireNonNull(output);
         this.authService = Objects.requireNonNull(authService);
         this.financeService = Objects.requireNonNull(financeService);
         this.budgetService = Objects.requireNonNull(budgetService);
+        this.transferService = Objects.requireNonNull(transferService);
     }
 
     public void run() {
@@ -90,6 +95,7 @@ public class ConsoleApplication {
             case "report" -> showReport();
             case "total" -> showSelectedTotal();
             case "transactions" -> showTransactions();
+            case "transfer" -> transfer();
             case "help" -> printHelp();
             case "" -> {
                 // Ignore empty commands.
@@ -377,6 +383,33 @@ public class ConsoleApplication {
         return currentUser;
     }
 
+    private void transfer() {
+        User sender = requireUser();
+
+        String recipientLogin = prompt("Recipient login: ");
+        BigDecimal amount = readAmount();
+
+        TransferResult result = transferService.transfer(
+                sender,
+                recipientLogin,
+                amount
+        );
+
+        output.printf(
+                "Transferred %s to %s%n",
+                result.amount().toPlainString(),
+                result.recipientLogin()
+        );
+
+        output.println(
+                "Balance: " + result.senderBalance().toPlainString()
+        );
+
+        result.alerts().forEach(alert ->
+                output.println("WARNING: " + alert)
+        );
+    }
+
     private void printHelp() {
         output.println("=== Available Commands ===");
         output.println("register     - Register a new user");
@@ -391,6 +424,7 @@ public class ConsoleApplication {
         output.println("report       - Show financial report");
         output.println("total        - Calculate selected categories");
         output.println("transactions - Show transaction history");
+        output.println("transfer     - Transfer money to another user");
         output.println("help         - Show this help");
         output.println("exit         - Exit application");
         output.println("Enter a command and follow the prompts.");

@@ -9,6 +9,7 @@ import com.dpnevsky.finance.service.AuthService;
 import com.dpnevsky.finance.service.BudgetService;
 import com.dpnevsky.finance.service.FinanceService;
 import com.dpnevsky.finance.storage.JsonFileStorage;
+import com.dpnevsky.finance.service.TransferService;
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -41,12 +42,18 @@ public class Main {
                 budgetService
         );
 
+        TransferService transferService = new TransferService(
+                userRepository,
+                financeService
+        );
+
         ConsoleApplication application = new ConsoleApplication(
                 new Scanner(System.in, StandardCharsets.UTF_8),
                 System.out,
                 authService,
                 financeService,
-                budgetService
+                budgetService,
+                transferService
         );
 
         try {

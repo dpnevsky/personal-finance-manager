@@ -6,6 +6,7 @@ import com.dpnevsky.finance.security.PasswordHasher;
 import com.dpnevsky.finance.service.AuthService;
 import com.dpnevsky.finance.service.BudgetService;
 import com.dpnevsky.finance.service.FinanceService;
+import com.dpnevsky.finance.service.TransferService;
 import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayInputStream;
@@ -215,6 +216,55 @@ class ConsoleApplicationTest {
         assertTrue(result.contains("Input closed."));
     }
 
+    @Test
+    void shouldTransferMoneyThroughCli() {
+        String result = runCommands(
+                "register", "alice", "password123",
+                "register", "bob", "password456",
+                "login", "alice", "password123",
+                "income", "1000", "Salary",
+                "transfer", "bob", "300",
+                "logout",
+                "login", "bob", "password456",
+                "report",
+                "exit"
+        );
+
+        assertTrue(result.contains("Transferred 300 to bob"));
+        assertTrue(result.contains("Balance: 700"));
+        assertTrue(result.contains("Logged in as: bob"));
+        assertTrue(result.contains("Total income: 300"));
+    }
+
+    @Test
+    void shouldRejectTransferWithoutLogin() {
+        String result = runCommands(
+                "transfer",
+                "exit"
+        );
+
+        assertTrue(result.contains("Please log in first"));
+        assertTrue(result.contains("Goodbye!"));
+    }
+
+    @Test
+    void shouldRejectInsufficientTransferAndContinue() {
+        String result = runCommands(
+                "register", "alice", "password123",
+                "register", "bob", "password456",
+                "login", "alice", "password123",
+                "income", "100", "Salary",
+                "transfer", "bob", "200",
+                "report",
+                "exit"
+        );
+
+        assertTrue(result.contains("Insufficient funds"));
+        assertTrue(result.contains("Total expenses: 0"));
+        assertTrue(result.contains("Balance: 100"));
+        assertTrue(result.contains("Goodbye!"));
+    }
+
     private String runCommands(String... commands) {
         String input = String.join("\n", commands) + "\n";
 
@@ -237,6 +287,11 @@ class ConsoleApplicationTest {
         FinanceService financeService =
                 new FinanceService(budgetService);
 
+        TransferService transferService = new TransferService(
+                repository,
+                financeService
+        );
+
         try (Scanner scanner = new Scanner(
                 inputStream, StandardCharsets.UTF_8);
              PrintStream output = new PrintStream(
@@ -247,7 +302,8 @@ class ConsoleApplicationTest {
                     output,
                     authService,
                     financeService,
-                    budgetService
+                    budgetService,
+                    transferService
             );
 
             application.run();
