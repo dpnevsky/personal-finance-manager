@@ -96,6 +96,9 @@ public class ConsoleApplication {
             case "total" -> showSelectedTotal();
             case "transactions" -> showTransactions();
             case "transfer" -> transfer();
+            case "rename-category" -> renameCategory();
+            case "delete-category" -> deleteCategory();
+            case "delete-budget" -> deleteBudget();
             case "help" -> printHelp();
             case "" -> {
                 // Ignore empty commands.
@@ -410,6 +413,46 @@ public class ConsoleApplication {
         );
     }
 
+    private void renameCategory() {
+        Wallet wallet = requireUser().getWallet();
+
+        TransactionType type = readTransactionType();
+        String oldName = prompt("Current category: ");
+        String newName = prompt("New category: ");
+
+        Category category = budgetService.renameCategory(
+                wallet, type, oldName, newName
+        );
+
+        output.println(
+                "Category renamed: " + oldName.trim()
+                        + " -> " + category.getName()
+        );
+    }
+
+    private void deleteCategory() {
+        Wallet wallet = requireUser().getWallet();
+
+        TransactionType type = readTransactionType();
+        String name = prompt("Category name: ");
+
+        budgetService.deleteCategory(wallet, type, name);
+
+        output.println("Category deleted: " + name.trim());
+    }
+
+    private void deleteBudget() {
+        Wallet wallet = requireUser().getWallet();
+
+        String categoryName = prompt("Expense category: ");
+
+        budgetService.deleteBudget(wallet, categoryName);
+
+        output.println(
+                "Budget deleted: " + categoryName.trim()
+        );
+    }
+
     private void printHelp() {
         output.println("=== Available Commands ===");
         output.println("register     - Register a new user");
@@ -425,6 +468,9 @@ public class ConsoleApplication {
         output.println("total        - Calculate selected categories");
         output.println("transactions - Show transaction history");
         output.println("transfer     - Transfer money to another user");
+        output.println("rename-category - Rename a category");
+        output.println("delete-category - Delete an unused category");
+        output.println("delete-budget   - Remove a category budget");
         output.println("help         - Show this help");
         output.println("exit         - Exit application");
         output.println("Enter a command and follow the prompts.");

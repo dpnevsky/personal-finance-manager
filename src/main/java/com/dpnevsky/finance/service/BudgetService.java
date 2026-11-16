@@ -97,4 +97,27 @@ public class BudgetService {
 
         return Optional.empty();
     }
+
+    public Category renameCategory(Wallet wallet,
+                                   TransactionType type,
+                                   String oldName,
+                                   String newName) {
+        Objects.requireNonNull(wallet, "Wallet cannot be null");
+
+        return wallet.renameCategory(type, oldName, newName);
+    }
+
+    public void deleteCategory(Wallet wallet,
+                               TransactionType type,
+                               String name) {
+        Objects.requireNonNull(wallet, "Wallet cannot be null");
+
+        wallet.deleteCategory(type, name);
+    }
+
+    public void deleteBudget(Wallet wallet, String categoryName) {
+        Objects.requireNonNull(wallet, "Wallet cannot be null");
+
+        wallet.deleteBudget(categoryName);
+    }
 }

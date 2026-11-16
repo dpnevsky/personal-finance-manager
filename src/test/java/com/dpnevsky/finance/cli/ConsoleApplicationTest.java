@@ -265,6 +265,52 @@ class ConsoleApplicationTest {
         assertTrue(result.contains("Goodbye!"));
     }
 
+    @Test
+    void shouldRenameCategoryThroughCli() {
+        String result = runCommands(
+                "register", "alice", "password123",
+                "login", "alice", "password123",
+                "income", "20000", "Salary",
+                "expense", "800", "Food",
+                "budget", "Food", "4000",
+                "rename-category",
+                "expense",
+                "Food",
+                "Groceries",
+                "report",
+                "exit"
+        );
+
+        assertTrue(result.contains(
+                "Category renamed: Food -> Groceries"
+        ));
+
+        assertTrue(result.contains(
+                "Groceries | Limit: 4000 | Spent: 800 | Remaining: 3200"
+        ));
+
+        assertTrue(result.contains("Balance: 19200"));
+    }
+
+    @Test
+    void shouldDeleteUnusedCategoryThroughCli() {
+        String result = runCommands(
+                "register", "alice", "password123",
+                "login", "alice", "password123",
+                "category", "expense", "Hobbies",
+                "budget", "Hobbies", "1000",
+                "delete-budget", "Hobbies",
+                "delete-category", "expense", "Hobbies",
+                "categories",
+                "exit"
+        );
+
+        assertTrue(result.contains("Budget deleted: Hobbies"));
+        assertTrue(result.contains("Category deleted: Hobbies"));
+        assertTrue(result.contains("No categories."));
+        assertTrue(result.contains("Goodbye!"));
+    }
+
     private String runCommands(String... commands) {
         String input = String.join("\n", commands) + "\n";
 
