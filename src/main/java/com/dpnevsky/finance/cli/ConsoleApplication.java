@@ -13,7 +13,9 @@ import com.dpnevsky.finance.service.BudgetService;
 import com.dpnevsky.finance.service.FinanceService;
 import com.dpnevsky.finance.model.TransferResult;
 import com.dpnevsky.finance.service.TransferService;
+import com.dpnevsky.finance.service.CsvTransactionService;
 
+import java.nio.file.Path;
 import java.io.PrintStream;
 import java.math.BigDecimal;
 import java.util.Arrays;
@@ -31,6 +33,7 @@ public class ConsoleApplication {
     private final FinanceService financeService;
     private final BudgetService budgetService;
     private final TransferService transferService;
+    private final CsvTransactionService csvTransactionService;
 
     private User currentUser;
 
@@ -39,14 +42,19 @@ public class ConsoleApplication {
                               AuthService authService,
                               FinanceService financeService,
                               BudgetService budgetService,
-                              TransferService transferService) {
+                              TransferService transferService,
+                              CsvTransactionService csvTransactionService) {
         this.scanner = Objects.requireNonNull(scanner);
         this.output = Objects.requireNonNull(output);
         this.authService = Objects.requireNonNull(authService);
         this.financeService = Objects.requireNonNull(financeService);
         this.budgetService = Objects.requireNonNull(budgetService);
         this.transferService = Objects.requireNonNull(transferService);
+        this.csvTransactionService = Objects.requireNonNull(
+                csvTransactionService
+        );
     }
+
 
     public void run() {
         output.println("Personal Finance Manager");
@@ -99,6 +107,8 @@ public class ConsoleApplication {
             case "rename-category" -> renameCategory();
             case "delete-category" -> deleteCategory();
             case "delete-budget" -> deleteBudget();
+            case "export-csv" -> exportCsv();
+            case "import-csv" -> importCsv();
             case "help" -> printHelp();
             case "" -> {
                 // Ignore empty commands.
@@ -453,6 +463,46 @@ public class ConsoleApplication {
         );
     }
 
+    private void exportCsv() {
+        User user = requireUser();
+
+        String filename = prompt("CSV file path: ").trim();
+
+        if (filename.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "CSV file path cannot be empty"
+            );
+        }
+
+        int count = csvTransactionService.exportTransactions(
+                user, Path.of(filename)
+        );
+
+        output.println(
+                "Exported " + count + " transactions to " + filename
+        );
+    }
+
+    private void importCsv() {
+        User user = requireUser();
+
+        String filename = prompt("CSV file path: ").trim();
+
+        if (filename.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "CSV file path cannot be empty"
+            );
+        }
+
+        int count = csvTransactionService.importTransactions(
+                user, Path.of(filename)
+        );
+
+        output.println(
+                "Imported " + count + " transactions from " + filename
+        );
+    }
+
     private void printHelp() {
         output.println("=== Available Commands ===");
         output.println("register     - Register a new user");
@@ -471,6 +521,8 @@ public class ConsoleApplication {
         output.println("rename-category - Rename a category");
         output.println("delete-category - Delete an unused category");
         output.println("delete-budget   - Remove a category budget");
+        output.println("export-csv   - Export transactions to CSV");
+        output.println("import-csv   - Import transactions from CSV");
         output.println("help         - Show this help");
         output.println("exit         - Exit application");
         output.println("Enter a command and follow the prompts.");

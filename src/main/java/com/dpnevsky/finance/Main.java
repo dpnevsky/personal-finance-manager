@@ -10,6 +10,8 @@ import com.dpnevsky.finance.service.BudgetService;
 import com.dpnevsky.finance.service.FinanceService;
 import com.dpnevsky.finance.storage.JsonFileStorage;
 import com.dpnevsky.finance.service.TransferService;
+import com.dpnevsky.finance.service.CsvTransactionService;
+import com.dpnevsky.finance.storage.CsvTransactionStorage;
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -47,13 +49,19 @@ public class Main {
                 financeService
         );
 
+        CsvTransactionService csvTransactionService =
+                new CsvTransactionService(
+                        new CsvTransactionStorage()
+                );
+
         ConsoleApplication application = new ConsoleApplication(
                 new Scanner(System.in, StandardCharsets.UTF_8),
                 System.out,
                 authService,
                 financeService,
                 budgetService,
-                transferService
+                transferService,
+                csvTransactionService
         );
 
         try {

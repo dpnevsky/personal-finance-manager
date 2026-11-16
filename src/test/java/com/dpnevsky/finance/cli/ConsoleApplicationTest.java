@@ -7,8 +7,12 @@ import com.dpnevsky.finance.service.AuthService;
 import com.dpnevsky.finance.service.BudgetService;
 import com.dpnevsky.finance.service.FinanceService;
 import com.dpnevsky.finance.service.TransferService;
+import com.dpnevsky.finance.service.CsvTransactionService;
+import com.dpnevsky.finance.storage.CsvTransactionStorage;
 import org.junit.jupiter.api.Test;
 
+import org.junit.jupiter.api.io.TempDir;
+import java.nio.file.Path;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
@@ -311,6 +315,47 @@ class ConsoleApplicationTest {
         assertTrue(result.contains("Goodbye!"));
     }
 
+    @Test
+    void shouldExportAndImportCsvThroughCli(@TempDir Path tempDir) {
+        String filename = tempDir.resolve(
+                "transactions.csv"
+        ).toString();
+
+        String result = runCommands(
+                "register", "alice", "password123",
+                "login", "alice", "password123",
+                "income", "1000", "Salary",
+                "export-csv", filename,
+                "logout",
+                "register", "bob", "password456",
+                "login", "bob", "password456",
+                "import-csv", filename,
+                "report",
+                "exit"
+        );
+
+        assertTrue(result.contains("Exported 1 transactions"));
+        assertTrue(result.contains("Imported 1 transactions"));
+        assertTrue(result.contains("Total income: 1000"));
+        assertTrue(result.contains("Balance: 1000"));
+    }
+
+    @Test
+    void shouldRejectCsvCommandsWithoutLogin() {
+        String result = runCommands(
+                "export-csv",
+                "import-csv",
+                "exit"
+        );
+
+        assertEquals(
+                2,
+                result.split("Please log in first", -1).length - 1
+        );
+
+        assertTrue(result.contains("Goodbye!"));
+    }
+
     private String runCommands(String... commands) {
         String input = String.join("\n", commands) + "\n";
 
@@ -338,6 +383,11 @@ class ConsoleApplicationTest {
                 financeService
         );
 
+        CsvTransactionService csvTransactionService =
+                new CsvTransactionService(
+                        new CsvTransactionStorage()
+                );
+
         try (Scanner scanner = new Scanner(
                 inputStream, StandardCharsets.UTF_8);
              PrintStream output = new PrintStream(
@@ -349,7 +399,8 @@ class ConsoleApplicationTest {
                     authService,
                     financeService,
                     budgetService,
-                    transferService
+                    transferService,
+                    csvTransactionService
             );
 
             application.run();
