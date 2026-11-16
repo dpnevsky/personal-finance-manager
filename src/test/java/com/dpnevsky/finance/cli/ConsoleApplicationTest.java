@@ -356,6 +356,87 @@ class ConsoleApplicationTest {
         assertTrue(result.contains("Goodbye!"));
     }
 
+    @Test
+    void shouldShowBalanceAndCurrentUser() {
+        String result = runCommands(
+                "register", "alice", "password123",
+                "login", "alice", "password123",
+                "income", "1250,50", "Salary",
+                "whoami",
+                "balance",
+                "exit"
+        );
+
+        assertTrue(result.contains("Logged in as: alice"));
+        assertTrue(result.contains("Balance: 1250.50"));
+    }
+
+    @Test
+    void shouldShowNotLoggedInStatus() {
+        String result = runCommands(
+                "whoami",
+                "exit"
+        );
+
+        assertTrue(result.contains("Not logged in."));
+    }
+
+    @Test
+    void shouldRejectBalanceWithoutAuthentication() {
+        String result = runCommands(
+                "balance",
+                "exit"
+        );
+
+        assertTrue(result.contains("Please log in first"));
+        assertTrue(result.contains("Goodbye!"));
+    }
+
+    @Test
+    void shouldShowFormattedTransactionHistory() {
+        String result = runCommands(
+                "register", "alice", "password123",
+                "login", "alice", "password123",
+                "income", "1000", "Salary",
+                "transactions",
+                "exit"
+        );
+
+        assertTrue(result.contains("Transaction History"));
+        assertTrue(result.contains("Date"));
+        assertTrue(result.contains("Type"));
+        assertTrue(result.contains("Category"));
+        assertTrue(result.contains("INCOME"));
+        assertTrue(result.contains("Salary"));
+    }
+
+    @Test
+    void shouldRejectNonCsvExportPath() {
+        String result = runCommands(
+                "register", "alice", "password123",
+                "login", "alice", "password123",
+                "export-csv", "data/users.json",
+                "help",
+                "exit"
+        );
+
+        assertTrue(result.contains("CSV file path must end with .csv"));
+        assertTrue(result.contains("Available Commands"));
+        assertTrue(result.contains("Goodbye!"));
+    }
+
+    @Test
+    void shouldShowUsageExamples() {
+        String result = runCommands(
+                "help",
+                "exit"
+        );
+
+        assertTrue(result.contains("=== Examples ==="));
+        assertTrue(result.contains("income -> 1500,50 -> Salary"));
+        assertTrue(result.contains("export-csv -> exports/alice.csv"));
+    }
+
     private String runCommands(String... commands) {
         String input = String.join("\n", commands) + "\n";
 

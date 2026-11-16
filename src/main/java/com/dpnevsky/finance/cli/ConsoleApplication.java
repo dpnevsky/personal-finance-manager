@@ -109,6 +109,8 @@ public class ConsoleApplication {
             case "delete-budget" -> deleteBudget();
             case "export-csv" -> exportCsv();
             case "import-csv" -> importCsv();
+            case "balance" -> showBalance();
+            case "whoami" -> showCurrentUser();
             case "help" -> printHelp();
             case "" -> {
                 // Ignore empty commands.
@@ -267,20 +269,9 @@ public class ConsoleApplication {
 
         output.println("=== Transaction History ===");
 
-        if (transactions.isEmpty()) {
-            output.println("No transactions.");
-            return;
-        }
-
-        for (Transaction transaction : transactions) {
-            output.printf(
-                    "%s | %s | %s | %s%n",
-                    transaction.getCreatedAt(),
-                    transaction.getType(),
-                    transaction.getCategory(),
-                    transaction.getAmount().toPlainString()
-            );
-        }
+        output.println(
+                CliTableFormatter.formatTransactions(transactions)
+        );
     }
 
     private void printCategorySummary(Wallet wallet,
@@ -366,13 +357,15 @@ public class ConsoleApplication {
     }
 
     private BigDecimal readAmount() {
-        String value = prompt("Amount: ").trim();
+        String value = prompt("Amount: ")
+                .trim()
+                .replace(',', '.');
 
         try {
             return new BigDecimal(value);
         } catch (NumberFormatException e) {
             throw new IllegalArgumentException(
-                    "Invalid amount. Example: 1250.50"
+                    "Invalid amount. Example: 1250.50 or 1250,50"
             );
         }
     }
@@ -465,14 +458,7 @@ public class ConsoleApplication {
 
     private void exportCsv() {
         User user = requireUser();
-
-        String filename = prompt("CSV file path: ").trim();
-
-        if (filename.isEmpty()) {
-            throw new IllegalArgumentException(
-                    "CSV file path cannot be empty"
-            );
-        }
+        String filename = readCsvFilename();
 
         int count = csvTransactionService.exportTransactions(
                 user, Path.of(filename)
@@ -485,14 +471,7 @@ public class ConsoleApplication {
 
     private void importCsv() {
         User user = requireUser();
-
-        String filename = prompt("CSV file path: ").trim();
-
-        if (filename.isEmpty()) {
-            throw new IllegalArgumentException(
-                    "CSV file path cannot be empty"
-            );
-        }
+        String filename = readCsvFilename();
 
         int count = csvTransactionService.importTransactions(
                 user, Path.of(filename)
@@ -501,6 +480,45 @@ public class ConsoleApplication {
         output.println(
                 "Imported " + count + " transactions from " + filename
         );
+    }
+
+    private void showBalance() {
+        User user = requireUser();
+
+        output.println(
+                "Balance: "
+                        + financeService.getBalance(user).toPlainString()
+        );
+    }
+
+    private void showCurrentUser() {
+        if (currentUser == null) {
+            output.println("Not logged in.");
+            return;
+        }
+
+        output.println(
+                "Logged in as: " + currentUser.getLogin()
+        );
+    }
+
+
+    private String readCsvFilename() {
+        String filename = prompt("CSV file path: ").trim();
+
+        if (filename.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "CSV file path cannot be empty"
+            );
+        }
+
+        if (!filename.toLowerCase(Locale.ROOT).endsWith(".csv")) {
+            throw new IllegalArgumentException(
+                    "CSV file path must end with .csv"
+            );
+        }
+
+        return filename;
     }
 
     private void printHelp() {
@@ -523,8 +541,22 @@ public class ConsoleApplication {
         output.println("delete-budget   - Remove a category budget");
         output.println("export-csv   - Export transactions to CSV");
         output.println("import-csv   - Import transactions from CSV");
+        output.println("balance      - Show current balance");
+        output.println("whoami       - Show current user");
         output.println("help         - Show this help");
         output.println("exit         - Exit application");
         output.println("Enter a command and follow the prompts.");
+        output.println();
+        output.println("=== Examples ===");
+        output.println("register -> alice -> a-unique-password");
+        output.println("income -> 1500,50 -> Salary");
+        output.println("expense -> 500 -> Food");
+        output.println("budget -> Food -> 4000");
+        output.println("total -> expense -> Food, Taxi");
+        output.println("export-csv -> exports/alice.csv");
+        output.println();
+        output.println(
+                "Enter a command at '>' and respond to each prompt."
+        );
     }
 }
