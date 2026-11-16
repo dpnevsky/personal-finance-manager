@@ -3,6 +3,7 @@ package com.dpnevsky.finance.repository;
 import com.dpnevsky.finance.model.User;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -25,5 +26,10 @@ public class InMemoryUserRepository implements UserRepository {
                     "User already exists"
             );
         }
+    }
+
+    @Override
+    public List<User> findAll() {
+        return List.copyOf(users.values());
     }
 }
